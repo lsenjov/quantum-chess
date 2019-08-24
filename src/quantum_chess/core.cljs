@@ -11,6 +11,7 @@
 
 (def app-state (atom {:text "Test"}))
 (def game-state-atom (atom constants/blank-board))
+(def display-state-atom (atom {:turn 0}))
 
 (defn get-app-element []
   (gdom/getElement "app"))
@@ -18,7 +19,8 @@
 
 (defn hello-world []
   [:div
-   (vis/display-board @game-state-atom)
+   (vis/display-board @game-state-atom display-state-atom)
+   (vis/display-slider @game-state-atom display-state-atom)
    [:div (pr-str @game-state-atom)]
    ])
 

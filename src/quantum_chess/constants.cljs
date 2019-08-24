@@ -45,4 +45,6 @@
                   :last-good side-start
                   :piecevalue-by-value (map-indexed (fn [idx idm] [idm idx]) all-pieces)
                   :piecevalue-by-piece (map-indexed (fn [idx idm] [idx idm]) all-pieces)
+                  :piece-list all-pieces
+                  :side-totals side-totals
                   })
