@@ -1,8 +1,9 @@
-(ns ^:figwheel-hooks quantum-chess.generator)
+(ns ^:figwheel-hooks quantum-chess.generator
+  (:require [quantum-chess.constants :as constants]
+            [clojure.math.combinatorics :as combo]))
 
-
-(def all-chess-types (list :P :B :N :R :Q :K))
-(def chess-type-counts {:K 1 :Q 1 :R 2 :N 2 :B 2 :P 8})
+(def all-chess-types constants/all-pieces)
+(def chess-type-counts constants/side-totals)
 
 
 (def chess-piece-count
@@ -15,7 +16,7 @@
     (count (filter #(= % chess-type) pieces))
     (chess-type-counts chess-type)))
 
-(defn expand-history
+(defn expand-team-history
   "for one player of mini chess"
   [pieces chess-type-list]
   (filter #(not (nil? %))
@@ -26,14 +27,49 @@
           nil))
       chess-type-list)))
 
-(defn generate-histories
+(defn generate-team-histories
   [root]
   (filter #(= (count %) chess-piece-count) (tree-seq
     #(not= chess-piece-count (count %))
-    #(expand-history % all-chess-types)
+    #(expand-team-history % all-chess-types)
     root
   )))
-    
-(defn generate-first-history
+
+(defn generate-team-first-history
   []
-  (first (generate-histories [])))
+  (first (generate-team-histories [])))
+
+
+(def testpossibles {
+  0 #{:K :B :N :R :P}
+  1 #{:B :N :R}
+  2 #{:K :N :R :P}
+  3 #{:K :R :P}
+  4 #{:K :B :N :P}
+  5 #{:K :B :R}
+})
+
+(def reallyallpossibles {
+  0 #{:K :B :N :R :P}
+  1 #{:K :B :N :R :P}
+  2 #{:K :B :N :R :P}
+  3 #{:K :B :N :R :P}
+  4 #{:K :B :N :R :P}
+  5 #{:K :B :N :R :P}
+})
+
+
+(defn get-children
+  [{:keys [depth node] :as parent} possibles]
+  (map
+    (fn [x] {:depth (inc depth) :node x})
+    (expand-team-history node (get possibles depth))))
+
+(defn generate-team-histories-known
+  [possibles]
+  (->> (tree-seq
+         #(>= chess-piece-count (:depth %))
+         #(get-children % possibles)
+         {:depth 0 :node []})
+       (filter #(= chess-piece-count (:depth %)))
+       (map :node)))
