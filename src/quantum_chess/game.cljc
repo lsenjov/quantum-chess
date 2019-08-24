@@ -35,23 +35,60 @@
       (<= 0 x (dec width))
       (<= 0 x (dec height)))))
 
+(defn- abs
+  [x]
+  (if (< 0 x)
+    x
+    (- x)))
+(defn- step-closer-int
+  "Given two integers, return an integer one step closer"
+  [from to]
+  (cond
+    (= from to) to
+    (< from to) (inc from)
+    :else (dec from)))
+(defn- step-closer
+  "Given two coords, returns a coord one step closer"
+  [coord-from coord-to]
+  {:x (step-closer-int (:x coord-from) (:x coord-to))
+   :y (step-closer-int (:y coord-from) (:y coord-to))})
+(defn- coords-between
+  "Returns a list of coordinates between from and to"
+  ([coord-from coord-to coords]
+   (if (= coord-from coord-to)
+     (butlast coords)
+     (let [new-coord (step-closer coord-from coord-to)]
+       (coords-between new-coord coord-to (conj coords new-coord)))))
+  ([coord-from coord-to]
+   (coords-between coord-from coord-to [])))
+(defn- any-piece?
+  "Walks across a game board, returns true if any piece is on the walk, else false"
+  [game-state coords]
+  (->> coords
+       (map (partial get-piece-at game-state))
+       (remove nil?)
+       (count)
+       (pos?)))
 (defn- valid-orthagonal-move?
   [game-state coord-from coord-to piece-type]
   (let [current-board (-> game-state :board last)
-        current-piece (-> game-state (get-piece-at coord-from))]
-    
-    ))
+        current-piece (-> game-state (get-piece-at coord-from))
+        x-diff (- (:x coord-to) (:x coord-from))
+        y-diff (- (:y coord-to) (:y coord-from))]
+    (cond
+      (and (not (zero? x-diff)) (and (zero? y-diff))) false
+      (any-piece? game-state (coords-between coord-from coord-to)) false
+      :otherwise true
+      )))
 (defn- valid-diagonal-move?
   [game-state coord-from coord-to piece-type]
   (let [current-board (-> game-state :board last)
         current-piece (-> game-state (get-piece-at coord-from))]
-    
     ))
 (defn- valid-knight-move?
   [game-state coord-from coord-to piece-type]
   (let [current-board (-> game-state :board last)
         current-piece (-> game-state (get-piece-at coord-from))]
-    
     ))
 (defmulti valid-move-by-piece?
   "For the board as it is, is this a valid move?"
