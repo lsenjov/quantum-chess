@@ -4,7 +4,9 @@
 ;; Each of the 6 pieces, ordered in ascending rarity,
 ;; So hopefully the algorithm can weed out a bunch of options early
 (def all-pieces [:P :B :N :R :Q :K])
-(def side-totals {:K 1 :Q 1 :R 2 :N 2 :B 2 :P 8})
+; Disabled because we're doing mini chess only
+;(def side-totals {:K 1 :Q 1 :R 2 :N 2 :B 2 :P 8})
+(def side-totals {:K 1 :Q 1 :R 1 :N 1 :B 1 :P 1})
 ;(def side-start (repeat (concat (for [[k v] side-totals] (repeat k v))) 2))
 (def side-start
   (apply concat
@@ -33,11 +35,12 @@
          (map vector (range pieces-per-side (* 2 pieces-per-side)) (repeat {:color :black})))
        (into {})
        ))
-(def blank-board {:board [(initial-positions 16 8 8)]
+(def blank-board {:board [(initial-positions 6 6 6)]
+                  :board-stats {:width 6 :height 6}
                   ; Anything derived/* is derived in the validator
-                  :derived/coords (derived-coords (initial-positions 16 8 8))
+                  :derived/coords (derived-coords (initial-positions 6 6 6))
                   ;:pieces {0 {:color :white :possibles #{:K :Q :B :K :R :P}}}
-                  :pieces (initial-pieces 16)
+                  :pieces (initial-pieces 6)
                   :derived/possibles {0 #{:K :Q :B :N :R :P} 1 #{:K :Q :B :N :R :P}}
                   ;:derived/history [{:from {:x 0 :y 0} :to {:x 0 :y 1}}]
 

@@ -16,9 +16,9 @@
          game-state (assoc game-state :derived/coords (-> game-state :board (nth turn) constants/derived-coords))
          ]
      [:table.table.table-hover>tbody
-      (doall (for [y (range 0 8)]
+      (doall (for [y (range 0 (-> game-state :board-stats :width))]
                ^{:key y}
-               [:tr (doall (for [x (range 0 8)] (display-square game-state x y)))]))]))
+               [:tr (doall (for [x (range 0 (-> game-state :board-stats :height))] (display-square game-state x y)))]))]))
 
 (defn display-slider
   [game-state display-state-atom]
