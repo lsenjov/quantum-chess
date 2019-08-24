@@ -1,10 +1,8 @@
 (ns ^:figwheel-hooks quantum-chess.generator
   (:require [quantum-chess.constants :as constants]
             [clojure.math.combinatorics :as combo]))
-
 (def all-chess-types constants/all-pieces)
 (def chess-type-counts constants/side-totals)
-
 
 (def chess-piece-count
   (->> chess-type-counts vals (reduce +)))

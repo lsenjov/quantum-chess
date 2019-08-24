@@ -7,6 +7,7 @@
    [quantum-chess.generator]
    [quantum-chess.constants :as constants]
    [quantum-chess.visualisation :as vis]
+   [quantum-chess.game :as game]
    ))
 
 (def app-state (atom {:text "Test"}))
@@ -22,6 +23,7 @@
    (vis/display-board @game-state-atom display-state-atom)
    (vis/display-slider @game-state-atom display-state-atom)
    [:div (pr-str @game-state-atom)]
+   [:div (pr-str (game/make-move @game-state-atom {:x 0 :y 0} {:x 0 :y 3}))]
    ])
 
 (defn mount [el]
