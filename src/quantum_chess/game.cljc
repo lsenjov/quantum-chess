@@ -6,7 +6,7 @@
 (defn get-player-turn
   "Returns :white or :black for the player to play _next"
   [game-state]
-  (if (-> game-state :board count odd?)
+  (if (-> game-state :board count even?)
     :white
     :black))
 (defn set-derived-fields-coords
