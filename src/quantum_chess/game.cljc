@@ -56,7 +56,7 @@
   "Returns a list of coordinates between from and to"
   ([coord-from coord-to coords]
    (if (= coord-from coord-to)
-     (butlast coords)
+     (butlast coords) ; Don't get the last coord which is where we are
      (let [new-coord (step-closer coord-from coord-to)]
        (coords-between new-coord coord-to (conj coords new-coord)))))
   ([coord-from coord-to]
@@ -83,8 +83,15 @@
 (defn- valid-diagonal-move?
   [game-state coord-from coord-to piece-type]
   (let [current-board (-> game-state :board last)
-        current-piece (-> game-state (get-piece-at coord-from))]
-    ))
+        current-piece (-> game-state (get-piece-at coord-from))
+        x-diff (- (:x coord-to) (:x coord-from))
+        y-diff (- (:y coord-to) (:y coord-from))
+        ]
+    (cond
+      (not= (abs x-diff) (abs y-diff)) false
+      (any-piece? game-state (coords-between coord-from coord-to)) false
+      :otherwise true
+    )))
 (defn- valid-knight-move?
   [game-state coord-from coord-to piece-type]
   (let [current-board (-> game-state :board last)
