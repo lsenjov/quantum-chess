@@ -11,17 +11,17 @@
   "Are there less than chess-type-counts pieces?"
   [pieces chess-type]
   (<
-    (count (filter #(= % chess-type) pieces))
+    (count (filter (fn [[k v]] (= chess-type v)) pieces))
     (chess-type-counts chess-type)))
 
 (defn -expand-team-history
   "for one player of mini chess"
-  [pieces chess-type-list]
+  [pieces chess-type-list piece-id]
   (filter #(not (nil? %))
     (map 
       (fn [chess-type]
         (if (-too-few-of pieces chess-type)
-          (conj pieces chess-type)
+          (assoc pieces piece-id chess-type)
           nil))
       chess-type-list)))
 
@@ -58,26 +58,26 @@
 
 
 (defn -get-children
-  [{:keys [depth node] :as parent} possibles]
-  (map
-    (fn [x] {:depth (inc depth) :node x})
-    (-expand-team-history node (get possibles depth))))
+  [{:keys [node remaining] :as parent} possibles]
+  (let [[piece-id & remaining-tail] remaining] 
+    (map
+      (fn [x] {:node x :remaining remaining-tail})
+      (-expand-team-history node (get possibles piece-id) piece-id))))
 
 (defn generate-teamlocal-histories
-  [teamlocal-possibles]
+  [teamlocal-possibles piece-ids]
   (->> (tree-seq
-         #(>= chess-piece-count (:depth %))
+         #(-> % :remaining seq)
          #(-get-children % teamlocal-possibles)
-         {:depth 0 :node []})
-       (filter #(= chess-piece-count (:depth %)))
+         {:node {} :remaining piece-ids})
+       (filter #(-> % :remaining empty?))
        (map :node)))
 
 (defn generate-team-histories
   [possibles team]
   (if (= team :white)
-    (generate-teamlocal-histories possibles)
-    (generate-teamlocal-histories
-      (reduce-kv (fn [m k v] (assoc m (- k chess-piece-count) v)) {} possibles))))
+    (generate-teamlocal-histories possibles (range 0 chess-piece-count))
+    (generate-teamlocal-histories possibles (range chess-piece-count (* 2 chess-piece-count)))))
     
 (defn generate-full-histories
   [possibles]
