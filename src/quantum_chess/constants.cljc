@@ -51,8 +51,9 @@
                   :pieces (initial-pieces 6)
                   :derived/possibles {0 #{:K :Q :B :N :R :P} 1 #{:K :Q :B :N :R :P}}
 
-                  ;:turns [{ :board {0 {:x 4 :y 5}} :move {:from {:x 0 :y 0} :to {:x 0 :y 1}} :derived/coords {{:x 4 :y 5} 0} }]
+                  ;:turns [{ :board {0 {:x 4 :y 5}} :player :white :move {:from {:x 0 :y 0} :to {:x 0 :y 1}} :derived/coords {{:x 4 :y 5} 0} }]
                   :turns [{:board (initial-positions 6 6 6)
+                           :player :white
                            :derived/coords (derived-coords (initial-positions 6 6 6))}]
 
                   ; Pieces 0-15 are white, 16-31 are black
