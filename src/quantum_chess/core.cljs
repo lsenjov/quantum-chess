@@ -1,7 +1,11 @@
 (ns ^:figwheel-hooks quantum-chess.core
   (:require
    [goog.dom :as gdom]
-   [reagent.core :as reagent :refer [atom]]))
+   [reagent.core :as reagent :refer [atom]]
+   
+   [quantum-chess.validator]
+   [quantum-chess.generator]
+   ))
 
 (println "This text is printed from src/quantum_chess/core.cljs. Go ahead and edit it and see reloading in action.")
 
@@ -26,10 +30,10 @@
                   ; Anything derived/* is derived in the validator
                   :derived/coords {{:x 0 :y 0} 0 {:x 1 :y 0} 1}
                   ;:pieces {0 {:color :white :possibles #{:K :Q :B :K :R :P}}}
-                  :pieces {0 {:color :white}
+                  :pieces {0 {:color :white},
                            1 {:color :black}}
                   :derived/possibles {0 #{:K :Q :B :N :R :P} 1 #{:K :Q :B :N :R :P}}
-                  ;:history [{:from {:x 0 :y 0} :to {:x 0 :y 1}}]
+                  ;:derived/history [{:from {:x 0 :y 0} :to {:x 0 :y 1}}]
 
                   ; Pieces 0-15 are white, 16-31 are black
                   :last-good side-start
