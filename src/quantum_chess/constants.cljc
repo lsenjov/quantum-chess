@@ -45,19 +45,17 @@
          (map vector (range pieces-per-side (* 2 pieces-per-side)) (repeat {:color :black})))
        (into {})
        ))
-(def blank-board {:board [(initial-positions 6 6 6)]
+(def blank-board {
                   :board-stats {:width 6 :height 6}
-                  ; Anything derived/* is derived in the validator
-                  :derived/coords (derived-coords (initial-positions 6 6 6))
-                  ;:pieces {0 {:color :white :possibles #{:K :Q :B :K :R :P}}}
+                  ;:pieces {0 {:color :white}}
                   :pieces (initial-pieces 6)
                   :derived/possibles {0 #{:K :Q :B :N :R :P} 1 #{:K :Q :B :N :R :P}}
-                  ;:derived/history [{:from {:x 0 :y 0} :to {:x 0 :y 1}}]
+
+                  ;:turns [{ :board {0 {:x 4 :y 5}} :move {:from {:x 0 :y 0} :to {:x 0 :y 1}} :derived/coords {{:x 4 :y 5} 0} }]
+                  :turns [{:board (initial-positions 6 6 6)
+                           :derived/coords (derived-coords (initial-positions 6 6 6))}]
 
                   ; Pieces 0-15 are white, 16-31 are black
-                  :last-good side-start
-                  :piecevalue-by-value (map-indexed (fn [idx idm] [idm idx]) all-pieces)
-                  :piecevalue-by-piece (map-indexed (fn [idx idm] [idx idm]) all-pieces)
                   :piece-list all-pieces
                   :side-totals side-totals
                   })
