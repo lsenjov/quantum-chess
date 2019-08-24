@@ -1,9 +1,7 @@
 (ns ^:figwheel-hooks quantum-chess.generator)
 
-
 (def all-chess-types (list :P :B :N :R :Q :K))
 (def chess-type-counts {:K 1 :Q 1 :R 2 :N 2 :B 2 :P 8})
-
 
 (def chess-piece-count
   (->> chess-type-counts vals (reduce +)))
