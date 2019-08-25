@@ -8,16 +8,18 @@
 
 (defn click
   [game-state-atom display-state-atom x y]
-  (let [{:keys [?clicked] :as display-state} @display-state-atom]
-    (println "Click:" x y)
-    (if ?clicked
-      (let [from ?clicked
-            to {:x x :y y}]
-        (swap! display-state-atom dissoc :?clicked)
-        (swap! game-state-atom quantum-chess.control/move-baby-move from to)
-        (swap! display-state-atom assoc :turn (game/get-turn-num @game-state-atom))
-        )
-      (swap! display-state-atom assoc :?clicked {:x x :y y}))))
+  (try
+    (let [{:keys [?clicked] :as display-state} @display-state-atom]
+      (println "Click:" x y)
+      (if ?clicked
+        (let [from ?clicked
+              to {:x x :y y}]
+          (swap! display-state-atom dissoc :?clicked)
+          (swap! game-state-atom quantum-chess.control/move-baby-move from to)
+          (swap! display-state-atom assoc :turn (game/get-turn-num @game-state-atom))
+          )
+        (swap! display-state-atom assoc :?clicked {:x x :y y})))
+    (catch js/Error e (js/alert e))))
 (defn display-square
   [game-state click-fn turn-num {:keys [x y] :as coord} selected-coord]
   ^{:key {:x x :y y}}
