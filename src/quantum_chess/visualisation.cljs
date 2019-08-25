@@ -3,6 +3,7 @@
     [quantum-chess.validator]
     [quantum-chess.constants :as constants]
     [quantum-chess.game :as game]
+    [quantum-chess.control]
     ))
 
 (defn click
@@ -13,7 +14,7 @@
       (let [from ?clicked
             to {:x x :y y}]
         (swap! display-state-atom dissoc :?clicked)
-        (swap! game-state-atom game/make-move from to)
+        (swap! game-state-atom quantum-chess.control/move-baby-move from to)
         (swap! display-state-atom assoc :turn (game/get-turn-num @game-state-atom))
         )
       (swap! display-state-atom assoc :?clicked {:x x :y y}))))
@@ -35,16 +36,24 @@
          game-state (assoc @game-state-atom :derived/coords (-> @game-state-atom :board (nth turn) constants/derived-coords))
          turns (game/get-turn-num game-state)
          click-fn (fn [x y] (click game-state-atom display-state-atom x y))
+         game-won (game/game-won game-state)
          ]
-     [:table.table.table-hover>tbody
-      (doall (for [y (range 0 (-> game-state :board-stats :width))]
-               ^{:key y}
-               [:tr (doall (for [x (range 0 (-> game-state :board-stats :height))]
-                             (display-square
-                               game-state
-                               (if (= turn turns) click-fn) ; Only allow clicking on current turn
-                               (:turn @display-state-atom)
-                               x y)))]))]))
+     [:div
+      (if game-won
+        [:h2
+        (case game-won
+          :white "Game won by white!"
+          :black "Game won by black!"
+          :stalemate "Both teams lost their kings!")])
+      [:table.table.table-hover>tbody
+       (doall (for [y (range (-> game-state :board-stats :width dec) -1 -1)]
+                ^{:key y}
+                [:tr (doall (for [x (range 0 (-> game-state :board-stats :height))]
+                              (display-square
+                                game-state
+                                (if (= turn turns) click-fn) ; Only allow clicking on current turn
+                                (:turn @display-state-atom)
+                                x y)))]))]]))
 
 (defn display-slider
   [game-state-atom display-state-atom]

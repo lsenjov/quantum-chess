@@ -11,8 +11,8 @@
    ))
 
 (def app-state (atom {:text "Test"}))
-(def game-state-atom (atom constants/blank-board))
-(def display-state-atom (atom {:turn 0}))
+(defonce game-state-atom (atom constants/blank-board))
+(defonce display-state-atom (atom {:turn 0}))
 
 (defn get-app-element []
   (gdom/getElement "app"))
@@ -22,14 +22,13 @@
   [:div
    [vis/display-board game-state-atom display-state-atom]
    [vis/display-slider game-state-atom display-state-atom]
+   [:button.btn.btn-primary
+    {:onClick #(do
+                 (reset! display-state-atom {:turn 0})
+                 (reset! game-state-atom constants/blank-board)
+                 )}
+    "RESET"]
    [:div (pr-str @game-state-atom)]
-   [:button.btn.btn-primary
-    {:onClick #(println "LOL")}
-    "LOL"
-    ]
-   [:button.btn.btn-primary
-    {:onClick #(swap! game-state-atom game/make-move {:x 0 :y 0} {:x 1 :y 1})}
-    "ASDF"]
    ])
 
 (defn mount [el]
