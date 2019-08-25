@@ -1,26 +1,31 @@
 (ns ^:figwheel-hooks quantum-chess.generator
   (:require [quantum-chess.constants :as constants]
             [clojure.math.combinatorics :as combo]))
-(def all-chess-types constants/all-pieces)
-(def chess-type-counts constants/side-totals)
 
-(def chess-piece-count
-  (->> chess-type-counts vals (reduce +)))
+(def all-chess-types constants/all-pieces)
+;(def chess-type-counts constants/side-totals)
+
+(defn side-total-count
+  [side-totals]
+  (->> side-totals vals (reduce +)))
+
+;(def chess-piece-count
+;  (->> chess-type-counts vals (reduce +)))
 
 (defn -too-few-of
   "Are there less than chess-type-counts pieces?"
-  [pieces chess-type]
+  [pieces chess-type side-totals]
   (<
     (count (filter (fn [[k v]] (= chess-type v)) pieces))
-    (chess-type-counts chess-type)))
+    (side-totals chess-type)))
 
 (defn -expand-team-history
   "for one player of mini chess"
-  [pieces chess-type-list piece-id]
+  [pieces chess-type-list piece-id side-totals]
   (filter #(not (nil? %))
     (map 
       (fn [chess-type]
-        (if (-too-few-of pieces chess-type)
+        (if (-too-few-of pieces chess-type side-totals)
           (assoc pieces piece-id chess-type)
           nil))
       chess-type-list)))
@@ -58,34 +63,34 @@
 
 
 (defn -get-children
-  [{:keys [node remaining] :as parent} possibles]
+  [{:keys [node remaining] :as parent} possibles side-totals]
   (let [[piece-id & remaining-tail] remaining] 
     (map
       (fn [x] {:node x :remaining remaining-tail})
-      (-expand-team-history node (get possibles piece-id) piece-id))))
+      (-expand-team-history node (get possibles piece-id) piece-id side-totals))))
 
 (defn generate-teamlocal-histories
-  [teamlocal-possibles piece-ids]
+  [game possibles piece-ids]
   (->> (tree-seq
          #(-> % :remaining seq)
-         #(-get-children % teamlocal-possibles)
+         #(-get-children % possibles (:side-totals game))
          {:node {} :remaining piece-ids})
        (filter #(-> % :remaining empty?))
        (map :node)))
 
 (defn generate-team-histories
-  [possibles team]
+  [game possibles team]
   (if (= team :white)
-    (generate-teamlocal-histories possibles (range 0 chess-piece-count))
-    (generate-teamlocal-histories possibles (range chess-piece-count (* 2 chess-piece-count)))))
+    (generate-teamlocal-histories game possibles (constants/team-pieces game :white))
+    (generate-teamlocal-histories game possibles (constants/team-pieces game :black))))
     
 (defn generate-full-histories
-  [possibles]
-  (map (partial apply concat)
+  [game possibles]
+  (map (partial apply merge)
     (combo/cartesian-product
-      (generate-team-histories possibles :white)
-      (generate-team-histories possibles :black))))
+      (generate-team-histories game possibles :white) 
+      (generate-team-histories game possibles :black))))
   
 (defn generate-all-full-histories
-  []
-  (generate-full-histories (constants/all-possibles (* 2 chess-piece-count))))
+  [game]
+  (generate-full-histories game (:derived/possibles game)))
