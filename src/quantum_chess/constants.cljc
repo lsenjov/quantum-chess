@@ -13,10 +13,10 @@
   (->> side-totals
        (remove (fn [[_ v]] (zero? v)))
        (keys)
+       (set)
        (repeat)
        (map vector (range num-pieces))
-       (into {})
-       ))
+       (into {})))
 ;(def side-start (repeat (concat (for [[k v] side-totals] (repeat k v))) 2))
 (def side-start
   (apply concat
@@ -49,7 +49,7 @@
                   :board-stats {:width 6 :height 6}
                   ;:pieces {0 {:color :white}}
                   :pieces (initial-pieces 6)
-                  :derived/possibles {0 #{:K :Q :B :N :R :P} 1 #{:K :Q :B :N :R :P}}
+                  :derived/possibles (all-possibles 12)
 
                   ;:turns [{ :board {0 {:x 4 :y 5}} :player :white :move {:from {:x 0 :y 0} :to {:x 0 :y 1}} :derived/coords {{:x 4 :y 5} 0} }]
                   :turns [{:board (initial-positions 6 6 6)

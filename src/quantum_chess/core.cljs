@@ -20,10 +20,16 @@
 
 (defn hello-world []
   [:div
-   (vis/display-board @game-state-atom display-state-atom)
-   (vis/display-slider @game-state-atom display-state-atom)
+   [vis/display-board game-state-atom display-state-atom]
+   [vis/display-slider game-state-atom display-state-atom]
    [:div (pr-str @game-state-atom)]
-   [:div (pr-str (game/make-move @game-state-atom {:x 0 :y 0} {:x 0 :y 3}))]
+   [:button.btn.btn-primary
+    {:onClick #(println "LOL")}
+    "LOL"
+    ]
+   [:button.btn.btn-primary
+    {:onClick #(swap! game-state-atom game/make-move {:x 0 :y 0} {:x 1 :y 1})}
+    "ASDF"]
    ])
 
 (defn mount [el]
@@ -44,3 +50,4 @@
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
 )
+
