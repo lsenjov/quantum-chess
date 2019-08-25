@@ -5,19 +5,7 @@
   ))
 
 
-
-;(defn validate-history-turn
-;  "Validate whether a history permits the move made in a given turn"
-;  [game-state turn history]
-;  (if (:move turn)
-;    (let [
-;        {:keys [from to]} (:move turn)
-;        piece-id          (game/get-piece-at game-state turn from)
-;        piece-type        (get history piece-id)]
-;      (game/valid-move-by-piece? game-state turn from to piece-type))
-;    true) ; turns without a move are always valid
-
-(defn validate-history-turn
+(defn -validate-history-turn
   "Validate whether a history permits the move made in a given turn"
   [game-state turn-num history]
   (let [turn (-> game-state :turns (get turn-num))]
@@ -35,24 +23,31 @@
   [game-state history]
   ;(reduce #(and %1 %2)  ;NEED TO MAKE THIS LAZY
   (every?
-    #(validate-history-turn game-state % history)
+    #(-validate-history-turn game-state % history)
     (-> game-state :turns count range)))
 
 
-(defn update-possibles-item
+(defn -generate-possibles-item
   [possibles piece new-chess-type]
   (let [current-chess-types (get possibles piece)]
     (assoc possibles piece
       (set (conj current-chess-types new-chess-type)))))
 
-(defn update-possibles
+
+(defn -generate-possibles-history
   [possibles history]
-  (reduce-kv update-possibles-item possibles history))
+  (reduce-kv -generate-possibles-item possibles history))
+
 
 (defn generate-possibles
+  "Generate a map of piece ids to all possible chess types they could be. Will produce an empty map if game state is invalid"
   [game-state]
-  (reduce update-possibles {}
-    (filter #(validate-history game-state %) (generator/generate-all-full-histories game-state))))
+  (reduce -generate-possibles-history {}
+    (filter
+      #(validate-history game-state %)
+      (generator/generate-all-full-histories game-state))))
+
+
 
 
 (def -test-game {
