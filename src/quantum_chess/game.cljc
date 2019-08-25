@@ -140,7 +140,7 @@
 (defn- valid-knight-move?
   [game-state turn-num coord-from coord-to]
   (let [current-board (-> game-state :turns (get turn-num) :board)
-        current-piece (-> game-state (get-piece-at coord-from))]
+        current-piece (-> game-state (get-piece-at turn-num coord-from))]
     ; If the piece has moved two spaces, AND it's not on a diagonal or orthag, it's a knight
     (and
       (not (valid-orthagonal-move? game-state turn-num coord-from coord-to))
@@ -245,7 +245,7 @@
 (defmethod valid-move-by-piece? :N
   [game-state turn-num coord-from coord-to piece-type]
   (let [current-board (get-board-at-turn game-state turn-num)
-        current-piece (-> game-state (get-piece-at coord-from))]
+        current-piece (get-piece-at game-state turn-num coord-from)]
     (cond
       ; In bounds?
       (not (valid-coord? game-state turn-num coord-from)) false
@@ -310,3 +310,29 @@
           (update-in [:turns] conj (move-piece game-state coord-from coord-to))
           (assoc-in [:derived/possibles current-piece-id] new-possibles)
           ))))
+
+(defn- has-king?
+  [game-state player]
+  (as-> game-state v
+    ; Get all pieces
+    (:pieces v)
+    ; Belonging to the player
+    (filter (fn [[_ v]] (= player (:color v))) v)
+    ; Form a set
+    (set v)
+    ; Get possibles of that player
+    (filter (fn [[k pos-set]] (and (v k) (pos-set :K))) (:derived/possibles game-state))
+    (not (empty? v))))
+(defn game-won
+  "Checks if sides no longer have pieces on the board that could be a king
+  Returns the winner's colour
+  Returns nil if both still do, :white, :black, or :stalemate if neither have kings"
+  [game-state]
+  (let [white-king? (has-king? game-state :white)
+        black-king? (has-king? game-state :black)]
+    (cond
+      (and white-king? black-king?) nil
+      white-king? :white
+      black-king? :black
+      :else :stalemate
+      )))
