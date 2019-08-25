@@ -41,18 +41,14 @@
   ([game-state turn-num {:keys [x y] :as coord}]
    (if-let [id (-> game-state :turns (get turn-num) :derived/coords (get coord))]
      {:id id :color (-> game-state :pieces (get id) :color)}
-     nil))
-  ([game-state coord]
-   (get-piece-at game-state (get-turn-num game-state) coord)))
+     nil)))
 (defn valid-coord?
   "Is the coordinate on the board?"
-  ([game-state turn-num {:keys [x y] :as coord}]
+  ([game-state {:keys [x y] :as coord}]
    (let [{:keys [width height]} (-> game-state :board-stats)]
      (and
        (<= 0 x (dec width))
-       (<= 0 x (dec height)))))
-  ([game-state coord]
-   (valid-coord? game-state (get-turn-num game-state) coord)))
+       (<= 0 x (dec height))))))
 
 (defn- abs
   [x]
@@ -90,8 +86,7 @@
         (remove nil?)
         (count)
         (pos?)))
-  ([game-state coords]
-   (any-piece? game-state (get-turn-num game-state) coords)))
+  )
 (defn- move-length
   "Returns the number of squares moved in the shortest path (including diagonals)
   0,0 -> 1,2 = 2"
@@ -118,7 +113,7 @@
          y-diff (- (:y coord-to) (:y coord-from))]
      (cond
        (and (not (zero? x-diff)) (not (zero? y-diff))) false
-       (any-piece? game-state (coords-between coord-from coord-to)) false
+       (any-piece? game-state turn-num (coords-between coord-from coord-to)) false
        :otherwise true
        )))
   ([game-state coord-from coord-to]
@@ -132,7 +127,7 @@
          ]
      (cond
        (not= (abs x-diff) (abs y-diff)) false
-       (any-piece? game-state (coords-between coord-from coord-to)) false
+       (any-piece? game-state turn-num (coords-between coord-from coord-to)) false
        :otherwise true
        )))
   ([game-state coord-from coord-to]
@@ -163,8 +158,8 @@
         ]
     (cond
       ; In bounds?
-      (not (valid-coord? game-state turn-num coord-from)) false
-      (not (valid-coord? game-state turn-num coord-to)) false
+      (not (valid-coord? game-state coord-from)) false
+      (not (valid-coord? game-state coord-to)) false
       ; Can't have stayed still
       (= coord-from coord-to) false
       ; King can't have moved more than one space
@@ -181,8 +176,8 @@
         current-piece (-> game-state (get-piece-at turn-num coord-from))]
     (cond
       ; In bounds?
-      (not (valid-coord? game-state turn-num coord-from)) false
-      (not (valid-coord? game-state turn-num coord-to)) false
+      (not (valid-coord? game-state coord-from)) false
+      (not (valid-coord? game-state coord-to)) false
       ; Can't have stayed still
       (= coord-from coord-to) false
       ; Capturing
@@ -212,8 +207,8 @@
         current-piece (-> game-state (get-piece-at turn-num coord-from))]
     (cond
       ; In bounds?
-      (not (valid-coord? game-state turn-num coord-from)) false
-      (not (valid-coord? game-state turn-num coord-to)) false
+      (not (valid-coord? game-state coord-from)) false
+      (not (valid-coord? game-state coord-to)) false
       ; Can't have stayed still
       (= coord-from coord-to) false
       (not (valid-orthagonal-move? game-state turn-num coord-from coord-to)) false
@@ -227,8 +222,8 @@
         current-piece (-> game-state (get-piece-at turn-num coord-from))]
     (cond
       ; In bounds?
-      (not (valid-coord? game-state turn-num coord-from)) false
-      (not (valid-coord? game-state turn-num coord-to)) false
+      (not (valid-coord? game-state coord-from)) false
+      (not (valid-coord? game-state coord-to)) false
       ; Can't have stayed still
       (= coord-from coord-to) false
 
@@ -248,25 +243,24 @@
         current-piece (get-piece-at game-state turn-num coord-from)]
     (cond
       ; In bounds?
-      (not (valid-coord? game-state turn-num coord-from)) false
-      (not (valid-coord? game-state turn-num coord-to)) false
+      (not (valid-coord? game-state coord-from)) (println "Not a valid coord from")
+      (not (valid-coord? game-state coord-to)) (println "Not a valid coord to")
       ; Can't have stayed still
-      (= coord-from coord-to) false
-      ; TODO moving
+      (= coord-from coord-to) (println "Stayed still")
+      ; Moving
       ; If we're the same color as a piece we're moving to, we say no
-      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) false
+      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) (println "Moving to a same color piece")
 
       (valid-knight-move? game-state turn-num coord-from coord-to) true
-      :otherwise false
-      )))
+      :otherwise (println "Not a valid knight move otherwise"))))
 (defmethod valid-move-by-piece? :B
   [game-state turn-num coord-from coord-to piece-type]
   (let [current-board (get-board-at-turn game-state turn-num)
         current-piece (-> game-state (get-piece-at turn-num coord-from))]
     (cond
       ; In bounds?
-      (not (valid-coord? game-state turn-num coord-from)) false
-      (not (valid-coord? game-state turn-num coord-to)) false
+      (not (valid-coord? game-state coord-from)) false
+      (not (valid-coord? game-state coord-to)) false
       ; Can't have stayed still
       (= coord-from coord-to) false
       (not (valid-diagonal-move? game-state turn-num coord-from coord-to)) false
@@ -280,9 +274,9 @@
   Returns a new turn, NOT a game state"
   [game-state coord-from coord-to]
   (let [current-board (get-turn game-state (get-turn-num game-state))
-        current-piece-id (-> game-state (get-piece-at coord-from) :id)
-        target-piece-id (-> game-state (get-piece-at coord-to) :id)
         turn-num (get-turn-num game-state)
+        current-piece-id (-> (get-piece-at game-state turn-num coord-from) :id)
+        target-piece-id (-> (get-piece-at game-state turn-num coord-to) :id)
         ]
     (-> current-board
         ; Remove the target piece
@@ -296,10 +290,10 @@
   "Makes a move and saves the new board state. Does not validate correctness"
   [game-state coord-from coord-to]
   (let [game-state (set-derived-fields game-state)
-        current-piece (-> game-state (get-piece-at coord-from))
+        turn-num (get-turn-num game-state)
+        current-piece (get-piece-at game-state turn-num coord-from)
         current-piece-id (:id current-piece)
         possibles (get-in game-state [:derived/possibles current-piece-id])
-        turn-num (get-turn-num game-state)
         new-possibles (set (filter (partial valid-move-by-piece? game-state turn-num coord-from coord-to) possibles))
         ]
     new-possibles
@@ -318,11 +312,15 @@
     (:pieces v)
     ; Belonging to the player
     (filter (fn [[_ v]] (= player (:color v))) v)
+    (keys v)
     ; Form a set
     (set v)
+    ; Get all the pieces still on the board
+    (clojure.set/intersection v (-> game-state :turns last :board keys set))
     ; Get possibles of that player
     (filter (fn [[k pos-set]] (and (v k) (pos-set :K))) (:derived/possibles game-state))
-    (not (empty? v))))
+    (not (empty? v))
+    ))
 (defn game-won
   "Checks if sides no longer have pieces on the board that could be a king
   Returns the winner's colour
