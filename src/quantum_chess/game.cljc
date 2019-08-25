@@ -4,15 +4,13 @@
     [quantum-chess.constants :as constants]))
 
 ;; HELPERS
+(defn- throw-ex
+  [s]
+  (throw (#?(:clj Exception. :cljs js/Error.) s)))
+
 (def inverse-color
   {:white :black
    :black :white})
-(defn get-player-turn
-  "Returns :white or :black for the player to play _next"
-  [game-state]
-  (if (-> game-state :board count even?)
-    :white
-    :black))
 (defn set-derived-fields-coords
   "Set coords derived field"
   [turn]
@@ -24,6 +22,12 @@
 (defn get-turn
   [game-state turn-num]
   (-> game-state :turns (get turn-num)))
+(defn get-player-turn
+  "Returns :white or :black for the player to play _next"
+  [turn-num]
+  (if (even? turn-num)
+    :white
+    :black))
 
 (defn get-board-at-turn
   [game-state turn-num]
@@ -97,6 +101,24 @@
        inc))
 
 ;; PARTIAL MOVE VALIDATION
+(defn- valid-move-general?
+  "Checks a bunch of default conditions as to whether a piece should be able to move"
+  [game-state coord-from coord-to]
+  (let [turn-num (get-turn-num game-state)
+        current-board (get-board-at-turn game-state turn-num)
+        current-piece (-> game-state (get-piece-at turn-num coord-from))]
+    (println "turn-num" turn-num (get-player-turn turn-num))
+    (cond
+      ; In bounds?
+      (not (valid-coord? game-state coord-from)) (throw-ex (str "From coord " coord-from " not in bounds"))
+      (not (valid-coord? game-state coord-to)) (throw-ex (str "To coord " coord-from " not in bounds"))
+      ; Can't have stayed still
+      (= coord-from coord-to) (throw-ex (str "Can't be staying still"))
+      ; If we're the same color as a piece we're moving to, we say no
+      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) (throw-ex (str "Can't move to our own piece"))
+      ; Are we actually moving the right colored piece?
+      (not= (get-player-turn turn-num) (:color current-piece)) (throw-ex (str "Not your turn!"))
+      :otherwise true)))
 (defn- moved-forward?
   "Returns true if the piece has moved forward on the board"
   [coord-from coord-to {:keys [color] :as piece}]
@@ -157,16 +179,9 @@
         current-piece (-> game-state (get-piece-at turn-num coord-from))
         ]
     (cond
-      ; In bounds?
-      (not (valid-coord? game-state coord-from)) false
-      (not (valid-coord? game-state coord-to)) false
-      ; Can't have stayed still
-      (= coord-from coord-to) false
       ; King can't have moved more than one space
       (not (<= -1 (- (:x coord-from) (:x coord-to)) 1)) false
       (not (<= -1 (- (:y coord-from) (:y coord-to)) 1)) false
-      ; If we're the same color as a piece we're moving to, we say no
-      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) false
       ; TODO king in check?
       :otherwise true
       )))
@@ -175,11 +190,6 @@
   (let [current-board (get-board-at-turn game-state turn-num)
         current-piece (-> game-state (get-piece-at turn-num coord-from))]
     (cond
-      ; In bounds?
-      (not (valid-coord? game-state coord-from)) false
-      (not (valid-coord? game-state coord-to)) false
-      ; Can't have stayed still
-      (= coord-from coord-to) false
       ; Capturing
       (and
         (moved-forward? coord-from coord-to current-piece)
@@ -206,14 +216,7 @@
   (let [current-board (get-board-at-turn game-state turn-num)
         current-piece (-> game-state (get-piece-at turn-num coord-from))]
     (cond
-      ; In bounds?
-      (not (valid-coord? game-state coord-from)) false
-      (not (valid-coord? game-state coord-to)) false
-      ; Can't have stayed still
-      (= coord-from coord-to) false
       (not (valid-orthagonal-move? game-state turn-num coord-from coord-to)) false
-      ; If we're the same color as a piece we're moving to, we say no
-      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) false
       :otherwise true
       )))
 (defmethod valid-move-by-piece? :Q
@@ -221,20 +224,12 @@
   (let [current-board (get-board-at-turn game-state turn-num)
         current-piece (-> game-state (get-piece-at turn-num coord-from))]
     (cond
-      ; In bounds?
-      (not (valid-coord? game-state coord-from)) false
-      (not (valid-coord? game-state coord-to)) false
-      ; Can't have stayed still
-      (= coord-from coord-to) false
-
       ; Queens can move either orthog or diagonal
       (and
         (not (valid-orthagonal-move? game-state turn-num coord-from coord-to))
         (not (valid-diagonal-move? game-state turn-num coord-from coord-to)))
       false
 
-      ; If we're the same color as a piece we're moving to, we say no
-      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) false
       :otherwise true
       )))
 (defmethod valid-move-by-piece? :N
@@ -242,15 +237,7 @@
   (let [current-board (get-board-at-turn game-state turn-num)
         current-piece (get-piece-at game-state turn-num coord-from)]
     (cond
-      ; In bounds?
-      (not (valid-coord? game-state coord-from)) (println "Not a valid coord from")
-      (not (valid-coord? game-state coord-to)) (println "Not a valid coord to")
-      ; Can't have stayed still
-      (= coord-from coord-to) (println "Stayed still")
       ; Moving
-      ; If we're the same color as a piece we're moving to, we say no
-      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) (println "Moving to a same color piece")
-
       (valid-knight-move? game-state turn-num coord-from coord-to) true
       :otherwise (println "Not a valid knight move otherwise"))))
 (defmethod valid-move-by-piece? :B
@@ -258,14 +245,7 @@
   (let [current-board (get-board-at-turn game-state turn-num)
         current-piece (-> game-state (get-piece-at turn-num coord-from))]
     (cond
-      ; In bounds?
-      (not (valid-coord? game-state coord-from)) false
-      (not (valid-coord? game-state coord-to)) false
-      ; Can't have stayed still
-      (= coord-from coord-to) false
       (not (valid-diagonal-move? game-state turn-num coord-from coord-to)) false
-      ; If we're the same color as a piece we're moving to, we say no
-      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) false
       :otherwise true
       )))
 
@@ -289,6 +269,8 @@
 (defn make-move
   "Makes a move and saves the new board state. Does not validate correctness"
   [game-state coord-from coord-to]
+  (if (not (valid-move-general? game-state coord-from coord-to))
+    (throw (#?(:clj Exception. :cljs js/Error.) (str "Failed make-move-general?"))))
   (let [game-state (set-derived-fields game-state)
         turn-num (get-turn-num game-state)
         current-piece (get-piece-at game-state turn-num coord-from)
