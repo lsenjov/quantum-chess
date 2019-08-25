@@ -64,8 +64,13 @@
                 :board {0 {:x 4 :y 5} 1 {:x 1 :y 4} 2 {:x 2 :y 3} 3 {:x 0 :y 5}}
                 :player :black
                 :derived/coords (constants/derived-coords {0 {:x 4 :y 5} 1 {:x 1 :y 4} 2 {:x 2 :y 3} 3 {:x 0 :y 5}})
+                :move {:from {:x 2 :y 3} :to {:x 3 :y 1}}
+              } {
+                :board {0 {:x 4 :y 5} 1 {:x 1 :y 4} 2 {:x 2 :y 3} 3 {:x 0 :y 5}}
+                :player :white
+                :derived/coords (constants/derived-coords {0 {:x 4 :y 5} 1 {:x 1 :y 4} 2 {:x 2 :y 3} 3 {:x 0 :y 5}})
               }]
 
       :piece-list '(0 1 2 3)
-      :side-totals {:B 1 :R 1}
+      :side-totals {:N 1 :R 1}
       })
