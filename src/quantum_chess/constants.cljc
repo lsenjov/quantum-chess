@@ -60,3 +60,12 @@
                   :piece-list all-pieces
                   :side-totals side-totals
                   })
+
+
+(defn team-pieces
+  "Get the id of all pieces belonging to a team"
+  [game team]
+  (map key (filter
+    (fn [[k v]] (= team (:color v)))
+    (:pieces game))))
+    
