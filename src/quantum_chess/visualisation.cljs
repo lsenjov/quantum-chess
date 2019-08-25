@@ -19,13 +19,18 @@
         )
       (swap! display-state-atom assoc :?clicked {:x x :y y}))))
 (defn display-square
-  [game-state click-fn turn-num x y]
+  [game-state click-fn turn-num {:keys [x y] :as coord} selected-coord]
   ^{:key {:x x :y y}}
   [:td
    {:onClick (partial click-fn x y)}
    (if-let [piece-id (get-in game-state [:turns turn-num :derived/coords {:x x :y y}])]
      (let [color (:color (game/get-piece-at game-state turn-num {:x x :y y}))]
-       [:div {:class (if (= :white color) "table-secondary" "table-dark") :scope "Row"}
+       [:div {:class
+              (cond
+                (= coord selected-coord) "table-info"
+                (= :white color) "table-secondary"
+                :else "table-dark")
+              :scope "Row"}
         (str \| x \space y \space piece-id \space (get-in game-state [:pieces piece-id :color]) \|)
         [:br]
         (get-in game-state [:derived/possibles piece-id])
@@ -37,7 +42,7 @@
       ])])
 (defn display-board
   [game-state-atom display-state-atom]
-   (let [{:keys [turn] :as display-state} @display-state-atom
+   (let [{:keys [turn ?clicked] :as display-state} @display-state-atom
          game-state (assoc @game-state-atom :derived/coords (-> @game-state-atom :board (nth turn) constants/derived-coords))
          turns (game/get-turn-num game-state)
          click-fn (fn [x y] (click game-state-atom display-state-atom x y))
@@ -57,9 +62,14 @@
                  (doall (for [x (range 0 (-> game-state :board-stats :height))]
                           (display-square
                             game-state
-                            (if (= turn turns) click-fn) ; Only allow clicking on current turn
+                            (if (and
+                                  (= turn turns)
+                                  (not game-won))
+                              click-fn) ; Only allow clicking on current turn, or if game not won
                             (:turn @display-state-atom)
-                            x y)))]))]]))
+                            {:x x :y y}
+                            ?clicked
+                            )))]))]]))
 
 (defn display-slider
   [game-state-atom display-state-atom]
