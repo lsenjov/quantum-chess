@@ -10,13 +10,17 @@
   ^{:key {:x x :y y}}
   [:td
    (if-let [piece-id (get-in game-state [:turns turn-num :derived/coords {:x x :y y}])]
-     (str \| x \space y \space piece-id \space (get-in game-state [:pieces piece-id :color]) \|)
+     [:div
+      (str \| x \space y \space piece-id \space (get-in game-state [:pieces piece-id :color]) \|)
+      [:br]
+      (get-in game-state [:derived/possibles piece-id])
+      ]
      (str \| x \space y " - -|")
      )])
 (defn display-board
-  [game-state display-state-atom]
+  [game-state-atom display-state-atom]
    (let [{:keys [turn] :as display-state} @display-state-atom
-         game-state (assoc game-state :derived/coords (-> game-state :board (nth turn) constants/derived-coords))
+         game-state (assoc @game-state-atom :derived/coords (-> @game-state-atom :board (nth turn) constants/derived-coords))
          ]
      [:table.table.table-hover>tbody
       (doall (for [y (range 0 (-> game-state :board-stats :width))]
@@ -24,9 +28,10 @@
                [:tr (doall (for [x (range 0 (-> game-state :board-stats :height))] (display-square game-state (:turn @display-state-atom) x y)))]))]))
 
 (defn display-slider
-  [game-state display-state-atom]
-  (let [{:keys [turn] :as display-state} @display-state-atom
-        turns (-> game-state :board count dec)
+  [game-state-atom display-state-atom]
+  (let [game-state @game-state-atom
+        {:keys [turn] :as display-state} @display-state-atom
+        turns (-> game-state :turns count dec)
         percentage (if (zero? turns) "100" (-> (/ turn turns) (* 100) (js/parseInt)))]
     [:div
      [:button.btn

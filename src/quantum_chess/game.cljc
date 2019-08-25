@@ -3,6 +3,10 @@
   (:require
     [quantum-chess.constants :as constants]))
 
+;; HELPERS
+(def inverse-color
+  {:white :black
+   :black :white})
 (defn get-player-turn
   "Returns :white or :black for the player to play _next"
   [game-state]
@@ -12,19 +16,22 @@
 (defn set-derived-fields-coords
   "Set coords derived field"
   [turn]
-  (assoc turn :derived/coords (constants/derived-coords turn)))
+  (assoc turn :derived/coords (constants/derived-coords (:board turn))))
 (defn get-turn-num
   "Gets the last index available in turns (If there's 15 items, will return index 14)"
   [game-state]
   (-> game-state :turns count dec))
+(defn get-turn
+  [game-state turn-num]
+  (-> game-state :turns (get turn-num)))
+
 (defn get-board-at-turn
   [game-state turn-num]
-  (-> game-state :turns (get turn-num) :board))
+  (:board (get-turn game-state turn-num)))
 (defn set-derived-fields
   "Set _all_ the derived fields in a game map"
   ([game-state turn]
-   (-> game-state
-       (update-in game-state [:turns turn] set-derived-fields-coords)))
+   (update-in game-state [:turns turn] set-derived-fields-coords))
   ([game-state]
    (set-derived-fields game-state (get-turn-num game-state))))
 
@@ -52,6 +59,7 @@
   (if (< 0 x)
     x
     (- x)))
+
 (defn- step-closer-int
   "Given two integers, return an integer one step closer"
   [from to]
@@ -64,6 +72,7 @@
   [coord-from coord-to]
   {:x (step-closer-int (:x coord-from) (:x coord-to))
    :y (step-closer-int (:y coord-from) (:y coord-to))})
+
 (defn- coords-between
   "Returns a list of coordinates between from and to"
   ([coord-from coord-to coords]
@@ -83,6 +92,24 @@
         (pos?)))
   ([game-state coords]
    (any-piece? game-state (get-turn-num game-state) coords)))
+(defn- move-length
+  "Returns the number of squares moved in the shortest path (including diagonals)
+  0,0 -> 1,2 = 2"
+  [coord-from coord-to]
+  (->> (coords-between coord-from coord-to)
+       count
+       ; Coords-between only counts the intermediate steps, and is slightly too short
+       inc))
+
+;; PARTIAL MOVE VALIDATION
+(defn- moved-forward?
+  "Returns true if the piece has moved forward on the board"
+  [coord-from coord-to {:keys [color] :as piece}]
+  (let [y-diff (- (:y coord-to) (:y coord-from))]
+    (cond
+      (and (= :white color)  (pos? y-diff)) true
+      (and (= :black color)  (neg? y-diff)) true
+      :else false)))
 (defn- valid-orthagonal-move?
   ([game-state turn-num coord-from coord-to]
    (let [current-board (-> game-state :turns (get turn-num) :board)
@@ -90,7 +117,7 @@
          x-diff (- (:x coord-to) (:x coord-from))
          y-diff (- (:y coord-to) (:y coord-from))]
      (cond
-       (and (not (zero? x-diff)) (and (zero? y-diff))) false
+       (and (not (zero? x-diff)) (not (zero? y-diff))) false
        (any-piece? game-state (coords-between coord-from coord-to)) false
        :otherwise true
        )))
@@ -114,9 +141,15 @@
   [game-state turn-num coord-from coord-to]
   (let [current-board (-> game-state :turns (get turn-num) :board)
         current-piece (-> game-state (get-piece-at coord-from))]
+    ; If the piece has moved two spaces, AND it's not on a diagonal or orthag, it's a knight
+    (and
+      (not (valid-orthagonal-move? game-state turn-num coord-from coord-to))
+      (not (valid-diagonal-move? game-state turn-num coord-from coord-to))
+      (= 2 (move-length coord-from coord-to)))
     ; TODO
     ))
 
+;; FULL MOVE VALIDATION
 (defmulti valid-move-by-piece?
   "For the board as it is, is this a valid move?"
   (fn [game-state turn-num coord-from coord-to piece-type] piece-type))
@@ -152,12 +185,27 @@
       (not (valid-coord? game-state turn-num coord-to)) false
       ; Can't have stayed still
       (= coord-from coord-to) false
-      ; TODO moving
-      ; If we're the same color as a piece we're moving to, we say no
-      (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) false
+      ; Capturing
+      (and
+        (moved-forward? coord-from coord-to current-piece)
+        (valid-diagonal-move? game-state turn-num coord-from coord-to)
+        (= 1 (move-length coord-from coord-to))
+        (-> game-state (get-piece-at turn-num coord-to) :color (= (inverse-color (:color current-piece))))) true
       ; TODO en passant
-      :otherwise true
-      )))
+
+      ; Moving
+      ; We're not capturing, so if there's a piece where we're going it's wrong
+      (-> game-state (get-piece-at turn-num coord-to)) false
+      (and
+        (moved-forward? coord-from coord-to current-piece)
+        (valid-orthagonal-move? game-state turn-num coord-from coord-to)
+        (or
+          (= 1 (move-length coord-from coord-to))
+          (and
+            (= 2 (move-length coord-from coord-to))
+            ; TODO first move?
+            ))) true
+      :otherwise false)))
 (defmethod valid-move-by-piece? :R
   [game-state turn-num coord-from coord-to piece-type]
   (let [current-board (get-board-at-turn game-state turn-num)
@@ -207,7 +255,9 @@
       ; TODO moving
       ; If we're the same color as a piece we're moving to, we say no
       (-> game-state (get-piece-at turn-num coord-to) :color (= (:color current-piece))) false
-      :otherwise true
+
+      (valid-knight-move? game-state turn-num coord-from coord-to) true
+      :otherwise false
       )))
 (defmethod valid-move-by-piece? :B
   [game-state turn-num coord-from coord-to piece-type]
@@ -225,15 +275,38 @@
       :otherwise true
       )))
 
+(defn move-piece
+  "Moves a piece, dissasociates any piece that was already on the board in that place
+  Returns a new turn, NOT a game state"
+  [game-state coord-from coord-to]
+  (let [current-board (get-turn game-state (get-turn-num game-state))
+        current-piece-id (-> game-state (get-piece-at coord-from) :id)
+        target-piece-id (-> game-state (get-piece-at coord-to) :id)
+        turn-num (get-turn-num game-state)
+        ]
+    (-> current-board
+        ; Remove the target piece
+        (update-in [:board] dissoc target-piece-id)
+        ; Move the piece
+        (assoc-in [:board current-piece-id] coord-to)
+        ; Set new derived coords
+        (set-derived-fields-coords)
+        )))
 (defn make-move
   "Makes a move and saves the new board state. Does not validate correctness"
   [game-state coord-from coord-to]
   (let [game-state (set-derived-fields game-state)
-        current-board (-> game-state :board last)
         current-piece (-> game-state (get-piece-at coord-from))
         current-piece-id (:id current-piece)
         possibles (get-in game-state [:derived/possibles current-piece-id])
-        new-possibles (set (filter (partial valid-move-by-piece? game-state (get-turn-num game-state) coord-from coord-to) possibles))
+        turn-num (get-turn-num game-state)
+        new-possibles (set (filter (partial valid-move-by-piece? game-state turn-num coord-from coord-to) possibles))
         ]
     new-possibles
-    ))
+    (if (zero? (count new-possibles))
+      (throw (#?(:clj Exception. :cljs js/Error.) (str "That piece definitely can't move that way. Possibles: " possibles)))
+      (-> game-state
+          (assoc-in [:turns turn-num :move] {:from coord-from :to coord-to :id current-piece-id})
+          (update-in [:turns] conj (move-piece game-state coord-from coord-to))
+          (assoc-in [:derived/possibles current-piece-id] new-possibles)
+          ))))
