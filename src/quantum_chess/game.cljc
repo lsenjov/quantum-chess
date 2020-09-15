@@ -89,8 +89,7 @@
         (map (partial get-piece-at game-state turn-num))
         (remove nil?)
         (count)
-        (pos?)))
-  )
+        (pos?))))
 (defn- move-length
   "Returns the number of squares moved in the shortest path (including diagonals)
   0,0 -> 1,2 = 2"

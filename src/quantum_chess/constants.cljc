@@ -43,8 +43,7 @@
   (->> (concat
          (map vector (range 0 pieces-per-side) (repeat {:color :white}))
          (map vector (range pieces-per-side (* 2 pieces-per-side)) (repeat {:color :black})))
-       (into {})
-       ))
+       (into {})))
 (def blank-board {
                   :board-stats {:width 6 :height 6}
                   ;:pieces {0 {:color :white}}
@@ -60,7 +59,6 @@
                   :piece-list all-pieces
                   :side-totals side-totals
                   })
-
 
 (defn team-pieces
   "Get the id of all pieces belonging to a team"

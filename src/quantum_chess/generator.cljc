@@ -12,20 +12,20 @@
 ;(def chess-piece-count
 ;  (->> chess-type-counts vals (reduce +)))
 
-(defn -too-few-of
+(defn- too-few-of
   "Are there less than chess-type-counts pieces?"
   [pieces chess-type side-totals]
   (<
     (count (filter (fn [[k v]] (= chess-type v)) pieces))
     (side-totals chess-type)))
 
-(defn -expand-team-history
+(defn- expand-team-history
   "for one player of mini chess"
   [pieces chess-type-list piece-id side-totals]
   (filter #(not (nil? %))
     (map 
       (fn [chess-type]
-        (if (-too-few-of pieces chess-type side-totals)
+        (if (too-few-of pieces chess-type side-totals)
           (assoc pieces piece-id chess-type)
           nil))
       chess-type-list)))
@@ -62,18 +62,18 @@
 })
 
 
-(defn -get-children
+(defn- get-children
   [{:keys [node remaining] :as parent} possibles side-totals]
   (let [[piece-id & remaining-tail] remaining] 
     (map
       (fn [x] {:node x :remaining remaining-tail})
-      (-expand-team-history node (get possibles piece-id) piece-id side-totals))))
+      (expand-team-history node (get possibles piece-id) piece-id side-totals))))
 
 (defn generate-teamlocal-histories
   [game possibles piece-ids]
   (->> (tree-seq
          #(-> % :remaining seq)
-         #(-get-children % possibles (:side-totals game))
+         #(get-children % possibles (:side-totals game))
          {:node {} :remaining piece-ids})
        (filter #(-> % :remaining empty?))
        (map :node)))

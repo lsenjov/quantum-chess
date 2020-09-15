@@ -2,6 +2,7 @@
   (:require
    [goog.dom :as gdom]
    [reagent.core :as reagent :refer [atom]]
+   [reagent.dom :as rd]
    
    [quantum-chess.validator]
    [quantum-chess.generator]
@@ -32,7 +33,7 @@
    ])
 
 (defn mount [el]
-  (reagent/render-component [hello-world] el))
+  (rd/render [hello-world] el))
 
 (defn mount-app-element []
   (when-let [el (get-app-element)]
@@ -40,7 +41,9 @@
 
 ;; conditionally start your application based on the presence of an "app" element
 ;; this is particularly helpful for testing this ns without launching the app
-(mount-app-element)
+(defn init!
+      []
+      (mount-app-element))
 
 ;; specify reload hook with ^;after-load metadata
 (defn ^:after-load on-reload []

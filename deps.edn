@@ -1,0 +1,6 @@
+{:paths   ["src/main" "resources"]
+ :deps    {org.clojure/math.combinatorics {:mvn/version "0.1.6"}
+           reagent/reagent      {:mvn/version "1.0.0-alpha2"}
+           thheller/shadow-cljs {:mvn/version "2.9.8"}}
+ :aliases {:cljfmt {:extra-deps {cljfmt {:mvn/version "0.6.4"}}
+                    :main-opts  ["-m" "cljfmt.main" "fix" "--no-indentation" "src" "test" "env"]}}}

@@ -1,0 +1,10 @@
+;; shadow-cljs configuration
+{:deps true
+ :dev-http {8000 "public"}
+ :builds
+ {:main
+  {:nrepl   {:port       9000
+             :middleware [cider.piggieback/wrap-cljs-repl]}
+   :target  :browser
+   :modules {:main {:init-fn qchess.core/init!}}}
+  }}
