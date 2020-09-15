@@ -3,6 +3,8 @@
    [goog.dom :as gdom]
    [reagent.core :as reagent :refer [atom]]
    [reagent.dom :as rd]
+   [clojure.spec.alpha :as s]
+   [clojure.spec.test.alpha :as stest]
    
    [quantum-chess.validator]
    [quantum-chess.generator]
@@ -20,16 +22,20 @@
 
 (defn hello-world []
   [:div
-   [vis/display-board game-state-atom display-state-atom]
+   {:style {:display :flex
+            :flex-direction :column}}
+   [:div
+    {:style {:display :flex
+             :width "100%"
+             :justify-content :center}}
+    [vis/display-board game-state-atom display-state-atom]]
    [vis/display-slider game-state-atom display-state-atom]
    [:button.btn.btn-primary
     {:onClick #(do
                  (reset! display-state-atom {:turn 0})
-                 (reset! game-state-atom constants/blank-board)
-                 )}
+                 (reset! game-state-atom constants/blank-board))}
     "RESET"]
-   [:div (pr-str @game-state-atom)]
-   ])
+   [:div (pr-str @game-state-atom)]])
 
 (defn mount [el]
   (rd/render [hello-world] el))
@@ -47,6 +53,7 @@
 ;; specify reload hook with ^;after-load metadata
 (defn ^:dev/after-load on-reload []
   (mount-app-element)
+  (stest/instrument)
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)

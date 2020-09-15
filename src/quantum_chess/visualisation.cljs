@@ -23,11 +23,16 @@
 (defn display-square
   [game-state click-fn turn-num {:keys [x y] :as coord} selected-coord]
   ^{:key {:x x :y y}}
-  [:td
-   {:onClick (partial click-fn x y)}
+  [:div
+   {:style {:width "100px"
+            :height "100px"
+            :margin "10px"}
+    :onClick (partial click-fn x y)}
    (if-let [piece-id (get-in game-state [:turns turn-num :derived/coords {:x x :y y}])]
      (let [color (:color (game/get-piece-at game-state turn-num {:x x :y y}))]
-       [:div {:class
+       [:div {:style {:width "100%"
+                      :height "100%"}
+              :class
               (cond
                 (= coord selected-coord) "table-info"
                 (= :white color) "table-secondary"
@@ -57,10 +62,14 @@
           :white "Game won by white!"
           :black "Game won by black!"
           :stalemate "Both teams lost their kings!")])
-      [:table.table>tbody
+      [:div.grid
+       {:style {:display :flex
+                :flex-direction :column}}
        (doall (for [y (range (-> game-state :board-stats :width dec) -1 -1)]
                 ^{:key y}
-                [:tr.table-primary
+                [:div
+                 {:style {:display :flex
+                          :flex-direction :row}}
                  (doall (for [x (range 0 (-> game-state :board-stats :height))]
                           (display-square
                             game-state

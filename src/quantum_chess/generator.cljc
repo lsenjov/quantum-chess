@@ -1,5 +1,7 @@
 (ns ^:figwheel-hooks quantum-chess.generator
   (:require [quantum-chess.constants :as constants]
+            [quantum-chess.model :as model]
+            [clojure.spec.alpha :as s]
             [clojure.math.combinatorics :as combo]))
 
 (def all-chess-types constants/all-pieces)
@@ -69,28 +71,44 @@
       (fn [x] {:node x :remaining remaining-tail})
       (expand-team-history node (get possibles piece-id) piece-id side-totals))))
 
+(s/fdef generate-teamlocal-histories
+        :args (s/cat :game ::model/game
+                     :possibles :derived/possibles
+                     :piece-ids (s/coll-of integer?)))
 (defn generate-teamlocal-histories
   [game possibles piece-ids]
   (->> (tree-seq
-         #(-> % :remaining seq)
-         #(get-children % possibles (:side-totals game))
+         (fn [x]
+           (-> x :remaining seq))
+         (fn [children]
+           (get-children children possibles (:side-totals game)))
          {:node {} :remaining piece-ids})
        (filter #(-> % :remaining empty?))
        (map :node)))
 
+(s/fdef generate-team-histories
+        :args (s/cat :game ::model/game
+                     :possibles :derived/possibles
+                     :team :piece/color))
 (defn generate-team-histories
   [game possibles team]
   (if (= team :white)
     (generate-teamlocal-histories game possibles (constants/team-pieces game :white))
     (generate-teamlocal-histories game possibles (constants/team-pieces game :black))))
-    
+
+(s/fdef generate-full-histories
+        :args (s/cat :game ::model/game
+                     :possibles :derived/possibles))
 (defn generate-full-histories
   [game possibles]
   (map (partial apply merge)
     (combo/cartesian-product
       (generate-team-histories game possibles :white) 
       (generate-team-histories game possibles :black))))
-  
+
+
+(s/fdef generate-all-full-histories
+        :args (s/cat :game ::model/game))
 (defn generate-all-full-histories
   [game]
   (generate-full-histories game (:derived/possibles game)))
